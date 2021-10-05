@@ -1,9 +1,10 @@
-const kNumBodies = 3;
+const kNumBodies = 8192;
+const kWorkgroupSize = 64;
 
 // WGSL shader source.
 const wgsl = `
 // Simulation parameters.
-let kDelta = 0.0025;
+let kDelta = 0.000025;
 let kSoftening = 0.2;
 
 [[block]]
@@ -30,8 +31,7 @@ fn computeForce(ipos : vec4<f32>,
   return coeff * d;
 }
 
-// TODO: Better workgroup size
-[[stage(compute), workgroup_size(1)]]
+[[stage(compute), workgroup_size(${kWorkgroupSize})]]
 fn cs_main(
   [[builtin(global_invocation_id)]] gid : vec3<u32>,
   ) {
@@ -61,9 +61,9 @@ fn vs_main(
   ) -> [[builtin(position)]] vec4<f32> {
 
   var vertexOffsets = array<vec2<f32>, 3>(
-    vec2<f32>(0.1, -0.1),
-    vec2<f32>(-0.1, -0.1),
-    vec2<f32>(0.0, 0.1),
+    vec2<f32>(0.01, -0.01),
+    vec2<f32>(-0.01, -0.01),
+    vec2<f32>(0.0, 0.01),
   );
 
   return vec4<f32>(position.xy + vertexOffsets[vertex], position.zw);
@@ -210,7 +210,7 @@ const draw = () => {
   const computePassEncoder = commandEncoder.beginComputePass();
   computePassEncoder.setPipeline(computePipeline);
   computePassEncoder.setBindGroup(0, bindGroup);
-  computePassEncoder.dispatch(kNumBodies);
+  computePassEncoder.dispatch(kNumBodies / kWorkgroupSize);
   computePassEncoder.endPass();
 
   // Set up the render pass.
