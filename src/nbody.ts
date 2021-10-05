@@ -6,7 +6,13 @@ struct Float4Buffer {
 };
 
 [[group(0), binding(0)]]
-var<storage, read_write> positions : Float4Buffer;
+var<storage, read_write> positionsIn : Float4Buffer;
+
+[[group(0), binding(1)]]
+var<storage, read_write> positionsOut : Float4Buffer;
+
+[[group(0), binding(2)]]
+var<storage, read_write> velocities : Float4Buffer;
 
 // TODO: Better workgroup size
 [[stage(compute), workgroup_size(1)]]
@@ -15,7 +21,9 @@ fn cs_main(
   ) {
   let idx = gid.x;
   // TODO: Implement N-Body logic.
-  positions.data[idx].x = positions.data[idx].x + 0.001;
+  let pos = positionsIn.data[idx];
+  positionsOut.data[idx] = pos + vec4<f32>(0.001, 0.0, 0.0, 0.0);
+  ignore(velocities);
 }
 
 [[stage(vertex)]]
@@ -46,7 +54,9 @@ let computePipeline: GPUComputePipeline;
 let renderPipeline: GPURenderPipeline;
 let canvas: HTMLCanvasElement = null;
 let canvasContext: GPUCanvasContext = null;
-let positionsBuffer: GPUBuffer = null;
+let positionsIn: GPUBuffer = null;
+let positionsOut: GPUBuffer = null;
+let velocities: GPUBuffer = null;
 let bindGroup: GPUBindGroup = null;
 
 const init = async () => {
@@ -70,14 +80,24 @@ const init = async () => {
     -0.5, -0.5, 0.0, 1.0,
     0.0, 0.5, 0.0, 1.0,
   ]);
-  positionsBuffer = device.createBuffer({
+  positionsIn = device.createBuffer({
     size: 3 * 4 * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX,
     mappedAtCreation: true
   });
-  let positionsMapped = new Float32Array(positionsBuffer.getMappedRange());
+  positionsOut = device.createBuffer({
+    size: 3 * 4 * 4,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX,
+    mappedAtCreation: false
+  });
+  velocities = device.createBuffer({
+    size: 3 * 4 * 4,
+    usage: GPUBufferUsage.STORAGE,
+    mappedAtCreation: false
+  });
+  let positionsMapped = new Float32Array(positionsIn.getMappedRange());
   positionsMapped.set(positions);
-  positionsBuffer.unmap();
+  positionsIn.unmap();
 
   // Create the shader module.
   const module = device.createShaderModule({ code: wgsl });
@@ -119,19 +139,6 @@ const init = async () => {
     },
   });
 
-  // Create the bind group.
-  bindGroup = device.createBindGroup({
-    layout: computePipeline.getBindGroupLayout(0),
-    entries: [
-      {
-        binding: 0,
-        resource: {
-          buffer: positionsBuffer,
-        },
-      },
-    ],
-  });
-
   draw();
 }
 
@@ -139,12 +146,39 @@ const init = async () => {
 const draw = () => {
   const commandEncoder = device.createCommandEncoder();
 
+  // Create the bind group for the compute shader.
+  bindGroup = device.createBindGroup({
+    layout: computePipeline.getBindGroupLayout(0),
+    entries: [
+      {
+        binding: 0,
+        resource: {
+          buffer: positionsIn,
+        },
+      },
+      {
+        binding: 1,
+        resource: {
+          buffer: positionsOut,
+        },
+      },
+      {
+        binding: 2,
+        resource: {
+          buffer: velocities,
+        },
+      },
+    ],
+  });
+
+  // Set up the compute shader dispatch.
   const computePassEncoder = commandEncoder.beginComputePass();
   computePassEncoder.setPipeline(computePipeline);
   computePassEncoder.setBindGroup(0, bindGroup);
   computePassEncoder.dispatch(3);
   computePassEncoder.endPass();
 
+  // Set up the render pass.
   const colorTexture: GPUTexture = canvasContext.getCurrentTexture();
   const colorTextureView: GPUTextureView = colorTexture.createView();
   const colorAttachment: GPURenderPassColorAttachment = {
@@ -158,11 +192,14 @@ const draw = () => {
   renderPassEncoder.setPipeline(renderPipeline);
   renderPassEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
   renderPassEncoder.setScissorRect(0, 0, canvas.width, canvas.height);
-  renderPassEncoder.setVertexBuffer(0, positionsBuffer);
+  renderPassEncoder.setVertexBuffer(0, positionsOut);
   renderPassEncoder.draw(3, 3);
   renderPassEncoder.endPass();
 
   queue.submit([commandEncoder.finish()]);
+
+  // Swap the positions buffers.
+  [positionsIn, positionsOut] = [positionsOut, positionsIn];
 
   requestAnimationFrame(draw);
 }
