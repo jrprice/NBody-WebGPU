@@ -1,8 +1,18 @@
 // WGSL shader source.
 const wgsl = `
+[[block]]
+struct Float4Buffer {
+  data : array<vec4<f32>>;
+};
+
+[[group(0), binding(0)]]
+var<storage> positions : Float4Buffer;
+
 [[stage(vertex)]]
-fn vs_main([[location(0)]] inPos: vec3<f32>) -> [[builtin(position)]] vec4<f32> {
-    return vec4<f32>(inPos, 1.0);
+fn vs_main(
+  [[builtin(vertex_index)]] idx : u32
+  ) -> [[builtin(position)]] vec4<f32> {
+    return positions.data[idx];
 }
 
 [[stage(fragment)]]
@@ -17,6 +27,7 @@ let renderPipeline: GPURenderPipeline;
 let canvas: HTMLCanvasElement = null;
 let canvasContext: GPUCanvasContext = null;
 let positionsBuffer: GPUBuffer = null;
+let bindGroup:GPUBindGroup = null;
 
 const init = async () => {
   // Initialize the WebGPU device.
@@ -35,13 +46,13 @@ const init = async () => {
 
   // Create a vertex buffer for positions.
   const positions = new Float32Array([
-    1.0, -1.0, 0.0,
-    -1.0, -1.0, 0.0,
-    0.0, 1.0, 0.0,
+    0.5, -0.5, 0.0, 1.0,
+    -0.5, -0.5, 0.0, 1.0,
+    0.0, 0.5, 0.0, 1.0,
   ]);
   positionsBuffer = device.createBuffer({
-    size: 3 * 3 * 4,
-    usage: GPUBufferUsage.VERTEX,
+    size: 3 * 4 * 4,
+    usage: GPUBufferUsage.STORAGE,
     mappedAtCreation: true
   });
   let positionsMapped = new Float32Array(positionsBuffer.getMappedRange());
@@ -52,21 +63,10 @@ const init = async () => {
   const module = device.createShaderModule({ code: wgsl });
 
   // Create the render pipeline.
-  const positionsAttribute: GPUVertexAttribute = {
-    shaderLocation: 0,
-    offset: 0,
-    format: 'float32x3',
-  };
-  const positionsLayout: GPUVertexBufferLayout = {
-    attributes: [positionsAttribute],
-    arrayStride: 4 * 3,
-    stepMode: 'vertex',
-  };
   renderPipeline = device.createRenderPipeline({
     vertex: {
       module: module,
       entryPoint: 'vs_main',
-      buffers: [positionsLayout],
     },
     fragment: {
       module: module,
@@ -78,6 +78,19 @@ const init = async () => {
       cullMode: 'none',
       topology: 'triangle-list',
     },
+  });
+
+  // Create the bind group.
+  bindGroup = device.createBindGroup({
+    layout: renderPipeline.getBindGroupLayout(0),
+    entries: [
+      {
+        binding: 0,
+        resource: {
+          buffer: positionsBuffer,
+        },
+      },
+    ],
   });
 
   draw();
@@ -99,7 +112,7 @@ const draw = () => {
   renderPassEncoder.setPipeline(renderPipeline);
   renderPassEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
   renderPassEncoder.setScissorRect(0, 0, canvas.width, canvas.height);
-  renderPassEncoder.setVertexBuffer(0, positionsBuffer);
+  renderPassEncoder.setBindGroup(0, bindGroup);
   renderPassEncoder.draw(3);
   renderPassEncoder.endPass();
 
