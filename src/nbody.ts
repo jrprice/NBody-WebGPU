@@ -1,3 +1,5 @@
+const kNumBodies = 3;
+
 // WGSL shader source.
 const wgsl = `
 // Simulation parameters.
@@ -38,7 +40,7 @@ fn cs_main(
 
   // Compute force.
   var force = vec4<f32>(0.0);
-  for (var i = 0; i < 3; i = i + 1) {
+  for (var i = 0; i < ${kNumBodies}; i = i + 1) {
     force = force + computeForce(pos, positionsIn.data[i]);
   }
 
@@ -100,28 +102,23 @@ const init = async () => {
   });
 
   // Create a vertex buffer for positions.
-  const positions = new Float32Array([
-    0.5, -0.5, 0.0, 1.0,
-    -0.5, -0.5, 0.0, 1.0,
-    0.0, 0.5, 0.0, 1.0,
-  ]);
   positionsIn = device.createBuffer({
-    size: 3 * 4 * 4,
+    size: kNumBodies * 4 * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX,
     mappedAtCreation: true
   });
   positionsOut = device.createBuffer({
-    size: 3 * 4 * 4,
+    size: kNumBodies * 4 * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX,
     mappedAtCreation: false
   });
   velocities = device.createBuffer({
-    size: 3 * 4 * 4,
+    size: kNumBodies * 4 * 4,
     usage: GPUBufferUsage.STORAGE,
     mappedAtCreation: false
   });
   let positionsMapped = new Float32Array(positionsIn.getMappedRange());
-  positionsMapped.set(positions);
+  initBodies(positionsMapped);
   positionsIn.unmap();
 
   // Create the shader module.
@@ -167,6 +164,19 @@ const init = async () => {
   draw();
 }
 
+const initBodies = (positions: Float32Array) => {
+  // Generate initial positions on the surface of a sphere.
+  const kRadius = 0.6;
+  for (let i = 0; i < kNumBodies; i++) {
+    let longitude = 2.0 * Math.PI * Math.random();
+    let latitude = Math.acos((2.0 * Math.random() - 1.0));
+    positions[i * 4 + 0] = kRadius * Math.sin(latitude) * Math.cos(longitude);
+    positions[i * 4 + 1] = kRadius * Math.sin(latitude) * Math.sin(longitude);
+    positions[i * 4 + 2] = kRadius * Math.cos(latitude);
+    positions[i * 4 + 3] = 1.0;
+  }
+}
+
 // Render loop.
 const draw = () => {
   const commandEncoder = device.createCommandEncoder();
@@ -200,7 +210,7 @@ const draw = () => {
   const computePassEncoder = commandEncoder.beginComputePass();
   computePassEncoder.setPipeline(computePipeline);
   computePassEncoder.setBindGroup(0, bindGroup);
-  computePassEncoder.dispatch(3);
+  computePassEncoder.dispatch(kNumBodies);
   computePassEncoder.endPass();
 
   // Set up the render pass.
@@ -218,7 +228,7 @@ const draw = () => {
   renderPassEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
   renderPassEncoder.setScissorRect(0, 0, canvas.width, canvas.height);
   renderPassEncoder.setVertexBuffer(0, positionsOut);
-  renderPassEncoder.draw(3, 3);
+  renderPassEncoder.draw(3, kNumBodies);
   renderPassEncoder.endPass();
 
   queue.submit([commandEncoder.finish()]);
