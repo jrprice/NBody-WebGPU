@@ -178,7 +178,25 @@ const initBodies = (positions: Float32Array) => {
 }
 
 // Render loop.
+const kFpsLogInterval = 2000;
+let numFramesSinceLastLog = 0;
+let lastLogTime = null;
 const draw = () => {
+  // Log the average FPS every 2 seconds.
+  if (lastLogTime) {
+    const now = performance.now();
+    const timeSinceLastLog = now - lastLogTime;
+    if (timeSinceLastLog >= kFpsLogInterval) {
+      const fps = numFramesSinceLastLog / (timeSinceLastLog / 1000.0);
+      console.log(`Average FPS = ${fps}`);
+      lastLogTime = performance.now();
+      numFramesSinceLastLog = 0;
+    }
+  } else {
+    lastLogTime = performance.now();
+  }
+  numFramesSinceLastLog++;
+
   const commandEncoder = device.createCommandEncoder();
 
   // Create the bind group for the compute shader.
