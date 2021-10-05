@@ -1,5 +1,9 @@
 // WGSL shader source.
 const wgsl = `
+// Simulation parameters.
+let kDelta = 0.0025;
+let kSoftening = 0.2;
+
 [[block]]
 struct Float4Buffer {
   data : array<vec4<f32>>;
@@ -14,16 +18,37 @@ var<storage, read_write> positionsOut : Float4Buffer;
 [[group(0), binding(2)]]
 var<storage, read_write> velocities : Float4Buffer;
 
+fn computeForce(ipos : vec4<f32>,
+                jpos : vec4<f32>,
+                ) -> vec4<f32> {
+  let d = vec4<f32>((jpos - ipos).xyz, 0.0);
+  let distSq = d.x*d.x + d.y*d.y + d.z*d.z + kSoftening*kSoftening;
+  let dist   = inverseSqrt(distSq);
+  let coeff  = jpos.w * (dist*dist*dist);
+  return coeff * d;
+}
+
 // TODO: Better workgroup size
 [[stage(compute), workgroup_size(1)]]
 fn cs_main(
   [[builtin(global_invocation_id)]] gid : vec3<u32>,
   ) {
   let idx = gid.x;
-  // TODO: Implement N-Body logic.
   let pos = positionsIn.data[idx];
-  positionsOut.data[idx] = pos + vec4<f32>(0.001, 0.0, 0.0, 0.0);
-  ignore(velocities);
+
+  // Compute force.
+  var force = vec4<f32>(0.0);
+  for (var i = 0; i < 3; i = i + 1) {
+    force = force + computeForce(pos, positionsIn.data[i]);
+  }
+
+  // Update velocity.
+  var velocity = velocities.data[idx];
+  velocity = velocity + force * kDelta;
+  velocities.data[idx] = velocity;
+
+  // Update position.
+  positionsOut.data[idx] = pos + velocity * kDelta;
 }
 
 [[stage(vertex)]]
