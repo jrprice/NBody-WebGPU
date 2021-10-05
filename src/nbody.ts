@@ -87,6 +87,10 @@ let velocities: GPUBuffer = null;
 let bindGroup: GPUBindGroup = null;
 
 const init = async () => {
+  // Reset pipelines.
+  renderPipeline = null;
+  computePipeline = null;
+
   // Initialize the WebGPU device.
   const adapter = await navigator.gpu.requestAdapter();
   device = await adapter.requestDevice();
@@ -160,8 +164,6 @@ const init = async () => {
       entryPoint: 'cs_main',
     },
   });
-
-  draw();
 }
 
 const initBodies = (positions: Float32Array) => {
@@ -182,6 +184,12 @@ const kFpsLogInterval = 2000;
 let numFramesSinceLastLog = 0;
 let lastLogTime = null;
 const draw = () => {
+  if (!computePipeline) {
+    // Not ready yet.
+    requestAnimationFrame(draw);
+    return;
+  }
+
   // Log the average FPS every 2 seconds.
   if (lastLogTime) {
     const now = performance.now();
@@ -257,4 +265,9 @@ const draw = () => {
   requestAnimationFrame(draw);
 }
 
+function run() {
+  init();
+}
+
 init();
+draw();
