@@ -10,14 +10,23 @@ var<storage> positions : Float4Buffer;
 
 [[stage(vertex)]]
 fn vs_main(
-  [[builtin(vertex_index)]] idx : u32
+  [[builtin(instance_index)]] idx : u32,
+  [[builtin(vertex_index)]] vertex : u32,
   ) -> [[builtin(position)]] vec4<f32> {
-    return positions.data[idx];
+
+  var vertexOffsets = array<vec2<f32>, 3>(
+    vec2<f32>(0.1, -0.1),
+    vec2<f32>(-0.1, -0.1),
+    vec2<f32>(0.0, 0.1),
+  );
+
+  let pos = positions.data[idx];
+  return vec4<f32>(pos.xy + vertexOffsets[vertex], pos.zw);
 }
 
 [[stage(fragment)]]
 fn fs_main() -> [[location(0)]] vec4<f32> {
-    return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+  return vec4<f32>(1.0, 0.0, 0.0, 1.0);
 }
 `
 
@@ -27,7 +36,7 @@ let renderPipeline: GPURenderPipeline;
 let canvas: HTMLCanvasElement = null;
 let canvasContext: GPUCanvasContext = null;
 let positionsBuffer: GPUBuffer = null;
-let bindGroup:GPUBindGroup = null;
+let bindGroup: GPUBindGroup = null;
 
 const init = async () => {
   // Initialize the WebGPU device.
@@ -113,7 +122,7 @@ const draw = () => {
   renderPassEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
   renderPassEncoder.setScissorRect(0, 0, canvas.width, canvas.height);
   renderPassEncoder.setBindGroup(0, bindGroup);
-  renderPassEncoder.draw(3);
+  renderPassEncoder.draw(3, 3);
   renderPassEncoder.endPass();
 
   queue.submit([commandEncoder.finish()]);
