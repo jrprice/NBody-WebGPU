@@ -11,15 +11,22 @@ fn fs_main() -> [[location(0)]] vec4<f32> {
 }
 `
 
+let device: GPUDevice = null;
+let queue: GPUQueue = null;
+let renderPipeline: GPURenderPipeline;
+let canvas: HTMLCanvasElement = null;
+let canvasContext: GPUCanvasContext = null;
+let positionsBuffer: GPUBuffer = null;
+
 const init = async () => {
   // Initialize the WebGPU device.
   const adapter = await navigator.gpu.requestAdapter();
-  const device = await adapter.requestDevice();
-  const queue = device.queue;
+  device = await adapter.requestDevice();
+  queue = device.queue;
 
   // Set up the canvas context.
-  var canvas = <HTMLCanvasElement>document.getElementById('canvas');
-  const canvasContext = canvas.getContext('webgpu');
+  canvas = <HTMLCanvasElement>document.getElementById('canvas');
+  canvasContext = canvas.getContext('webgpu');
   canvasContext.configure({
     device: device,
     format: 'bgra8unorm',
@@ -32,7 +39,7 @@ const init = async () => {
     -1.0, -1.0, 0.0,
     0.0, 1.0, 0.0,
   ]);
-  let positionsBuffer = device.createBuffer({
+  positionsBuffer = device.createBuffer({
     size: 3 * 3 * 4,
     usage: GPUBufferUsage.VERTEX,
     mappedAtCreation: true
@@ -55,7 +62,7 @@ const init = async () => {
     arrayStride: 4 * 3,
     stepMode: 'vertex',
   };
-  const pipeline = device.createRenderPipeline({
+  renderPipeline = device.createRenderPipeline({
     vertex: {
       module: module,
       entryPoint: 'vs_main',
@@ -73,31 +80,32 @@ const init = async () => {
     },
   });
 
-  // Render loop.
-  const renderFrame = () => {
-    const colorTexture: GPUTexture = canvasContext.getCurrentTexture();
-    const colorTextureView: GPUTextureView = colorTexture.createView();
-    const colorAttachment: GPURenderPassColorAttachment = {
-      view: colorTextureView,
-      loadValue: { r: 0, g: 0, b: 0, a: 1 },
-      storeOp: 'store'
-    };
-    const commandEncoder = device.createCommandEncoder();
-    const renderPassEncoder = commandEncoder.beginRenderPass({
-      colorAttachments: [colorAttachment],
-    });
-    renderPassEncoder.setPipeline(pipeline);
-    renderPassEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
-    renderPassEncoder.setScissorRect(0, 0, canvas.width, canvas.height);
-    renderPassEncoder.setVertexBuffer(0, positionsBuffer);
-    renderPassEncoder.draw(3);
-    renderPassEncoder.endPass();
+  draw();
+}
 
-    queue.submit([commandEncoder.finish()]);
+// Render loop.
+const draw = () => {
+  const colorTexture: GPUTexture = canvasContext.getCurrentTexture();
+  const colorTextureView: GPUTextureView = colorTexture.createView();
+  const colorAttachment: GPURenderPassColorAttachment = {
+    view: colorTextureView,
+    loadValue: { r: 0, g: 0, b: 0, a: 1 },
+    storeOp: 'store'
+  };
+  const commandEncoder = device.createCommandEncoder();
+  const renderPassEncoder = commandEncoder.beginRenderPass({
+    colorAttachments: [colorAttachment],
+  });
+  renderPassEncoder.setPipeline(renderPipeline);
+  renderPassEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
+  renderPassEncoder.setScissorRect(0, 0, canvas.width, canvas.height);
+  renderPassEncoder.setVertexBuffer(0, positionsBuffer);
+  renderPassEncoder.draw(3);
+  renderPassEncoder.endPass();
 
-    requestAnimationFrame(renderFrame);
-  }
-  renderFrame();
+  queue.submit([commandEncoder.finish()]);
+
+  requestAnimationFrame(draw);
 }
 
 init();
