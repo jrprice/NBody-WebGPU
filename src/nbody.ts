@@ -300,7 +300,7 @@ function draw() {
   const colorTextureView: GPUTextureView = colorTexture.createView();
   const colorAttachment: GPURenderPassColorAttachment = {
     view: colorTextureView,
-    loadValue: { r: 0, g: 0, b: 0, a: 1 },
+    loadValue: { r: 0, g: 0, b: 0.1, a: 1 },
     storeOp: 'store'
   };
   const renderPassEncoder = commandEncoder.beginRenderPass({
