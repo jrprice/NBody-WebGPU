@@ -87,24 +87,49 @@ fn cs_main(
   positionsOut.data[idx] = pos + velocity * kDelta;
 }
 
+struct VertexOut {
+  [[builtin(position)]] position : vec4<f32>;
+  [[location(0), interpolate(flat)]] center : vec4<f32>;
+};
+
 [[stage(vertex)]]
 fn vs_main(
   [[builtin(instance_index)]] idx : u32,
   [[builtin(vertex_index)]] vertex : u32,
   [[location(0)]] position : vec4<f32>,
-  ) -> [[builtin(position)]] vec4<f32> {
+  ) -> VertexOut {
 
-  var vertexOffsets = array<vec2<f32>, 3>(
+  var vertexOffsets = array<vec2<f32>, 6>(
     vec2<f32>(0.01, -0.01),
     vec2<f32>(-0.01, -0.01),
-    vec2<f32>(0.0, 0.01),
+    vec2<f32>(-0.01, 0.01),
+    vec2<f32>(-0.01, 0.01),
+    vec2<f32>(0.01, 0.01),
+    vec2<f32>(0.01, -0.01),
   );
 
-  return vec4<f32>(position.xy + vertexOffsets[vertex], position.zw);
+  var out : VertexOut;
+  out.position = vec4<f32>(position.xy + vertexOffsets[vertex], position.zw);
+  out.center = position;
+  return out;
 }
 
 [[stage(fragment)]]
-fn fs_main() -> [[location(0)]] vec4<f32> {
+fn fs_main(
+  [[builtin(position)]] position : vec4<f32>,
+  [[location(0), interpolate(flat)]] center : vec4<f32>,
+  ) -> [[location(0)]] vec4<f32> {
+  // Calculate the center position in framebuffer coordinates.
+  var c = vec2<f32>(center.x, -center.y) + vec2<f32>(1.0, 1.0);
+  c = (c / 2.0) * vec2<f32>(${canvas.width}.0, ${canvas.height}.0);
+
+  // Calculate the distance of this fragment from the center and discard those
+  // outside a certain radius.
+  let dist = distance(c, position.xy);
+  if (dist > 0.75) {
+    discard;
+  }
+
   return vec4<f32>(1.0, 0.0, 0.0, 1.0);
 }
 `;
@@ -264,7 +289,7 @@ function draw() {
   renderPassEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
   renderPassEncoder.setScissorRect(0, 0, canvas.width, canvas.height);
   renderPassEncoder.setVertexBuffer(0, positionsOut);
-  renderPassEncoder.draw(3, numBodies);
+  renderPassEncoder.draw(6, numBodies);
   renderPassEncoder.endPass();
 
   queue.submit([commandEncoder.finish()]);
