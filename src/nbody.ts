@@ -190,7 +190,21 @@ function initPipelines() {
     fragment: {
       module: module,
       entryPoint: 'fs_main',
-      targets: [{ format: 'bgra8unorm' }],
+      targets: [{
+        format: 'bgra8unorm',
+        blend: {
+          color: {
+            operation: "add",
+            srcFactor: "one",
+            dstFactor: "one",
+          },
+          alpha: {
+            operation: "add",
+            srcFactor: "one",
+            dstFactor: "one",
+          },
+        }
+      }],
     },
     primitive: {
       frontFace: 'cw',
