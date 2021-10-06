@@ -293,4 +293,9 @@ const run = async () => {
   initPipelines();
 }
 
+function stop() {
+  computePipeline = null;
+  renderPipeline = null;
+}
+
 run();
