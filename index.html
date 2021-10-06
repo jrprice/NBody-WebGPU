@@ -8,10 +8,21 @@
 
 <body>
   <h1>NBody WebGPU</h1>
-  <label for="wgsize">Workgroup size:</label>
-  <select name="wgsize" id="wgsize">
+  <label for="numbodies">Number of bodies:</label>
+  <select name="numbodies" id="numbodies">
+    <option value="65536">65536</option>
+    <option value="32768">32768</option>
+    <option value="16384" selected="selected">16384</option>
+    <option value="8192">8192</option>
+    <option value="4096">4096</option>
+    <option value="2048">2048</option>
     <option value="1024">1024</option>
     <option value="512">512</option>
+    <option value="256">256</option>
+  </select>
+  <br/>
+  <label for="wgsize">Workgroup size:</label>
+  <select name="wgsize" id="wgsize">
     <option value="256">256</option>
     <option value="128">128</option>
     <option value="64" selected="selected">64</option>
@@ -21,10 +32,11 @@
     <option value="2">2</option>
     <option value="1">1</option>
   </select>
-  <button onclick="run()">Run</button>
   <br /><br />
+  <button onclick="run()">Run</button>
+  &nbsp;
   <label id="fps" style="font-weight: bold; color: green"></label>
-  <br />
+  <br /><br />
   <canvas id="canvas" width="640" height="480" style="border: solid 1px#000;"></canvas>
   <script src="src/nbody.js"></script>
 </body>

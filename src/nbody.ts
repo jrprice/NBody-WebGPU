@@ -1,5 +1,5 @@
 // Simulation parameters.
-const kNumBodies = 8192;
+let numBodies;
 
 // Shader parameters.
 let workgroupSize;
@@ -74,7 +74,7 @@ fn cs_main(
 
   // Compute force.
   var force = vec4<f32>(0.0);
-  for (var i = 0; i < ${kNumBodies}; i = i + 1) {
+  for (var i = 0; i < ${numBodies}; i = i + 1) {
     force = force + computeForce(pos, positionsIn.data[i]);
   }
 
@@ -117,17 +117,17 @@ function initPipelines() {
 
   // Create a vertex buffer for positions.
   positionsIn = device.createBuffer({
-    size: kNumBodies * 4 * 4,
+    size: numBodies * 4 * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX,
     mappedAtCreation: true
   });
   positionsOut = device.createBuffer({
-    size: kNumBodies * 4 * 4,
+    size: numBodies * 4 * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX,
     mappedAtCreation: false
   });
   velocities = device.createBuffer({
-    size: kNumBodies * 4 * 4,
+    size: numBodies * 4 * 4,
     usage: GPUBufferUsage.STORAGE,
     mappedAtCreation: false
   });
@@ -179,7 +179,7 @@ function initPipelines() {
 function initBodies(positions: Float32Array) {
   // Generate initial positions on the surface of a sphere.
   const kRadius = 0.6;
-  for (let i = 0; i < kNumBodies; i++) {
+  for (let i = 0; i < numBodies; i++) {
     let longitude = 2.0 * Math.PI * Math.random();
     let latitude = Math.acos((2.0 * Math.random() - 1.0));
     positions[i * 4 + 0] = kRadius * Math.sin(latitude) * Math.cos(longitude);
@@ -246,7 +246,7 @@ function draw() {
   const computePassEncoder = commandEncoder.beginComputePass();
   computePassEncoder.setPipeline(computePipeline);
   computePassEncoder.setBindGroup(0, bindGroup);
-  computePassEncoder.dispatch(kNumBodies / workgroupSize);
+  computePassEncoder.dispatch(numBodies / workgroupSize);
   computePassEncoder.endPass();
 
   // Set up the render pass.
@@ -264,7 +264,7 @@ function draw() {
   renderPassEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
   renderPassEncoder.setScissorRect(0, 0, canvas.width, canvas.height);
   renderPassEncoder.setVertexBuffer(0, positionsOut);
-  renderPassEncoder.draw(3, kNumBodies);
+  renderPassEncoder.draw(3, numBodies);
   renderPassEncoder.endPass();
 
   queue.submit([commandEncoder.finish()]);
@@ -281,9 +281,13 @@ const run = async () => {
     await init();
   }
 
-  // Get workgroup size.
-  let wgsize = <HTMLSelectElement>document.getElementById("wgsize");
-  workgroupSize = Number(wgsize.selectedOptions[0].value);
+  // Get configurable options.
+  const getSelectedNumber = (id: string) => {
+    let list = <HTMLSelectElement>document.getElementById(id);
+    return Number(list.selectedOptions[0].value);
+  }
+  numBodies = getSelectedNumber("numbodies");
+  workgroupSize = getSelectedNumber("wgsize");
 
   // Recreate pipelines.
   initPipelines();
