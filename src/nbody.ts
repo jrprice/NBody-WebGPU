@@ -190,9 +190,9 @@ function initBodies(positions: Float32Array) {
 }
 
 // Render loop.
-const kFpsLogInterval = 2000;
-let numFramesSinceLastLog = 0;
-let lastLogTime = null;
+const kFpsUpdateInterval = 500;
+let numFramesSinceFpsUpdate = 0;
+let lastFpsUpdateTime = null;
 function draw() {
   if (!computePipeline) {
     // Not ready yet.
@@ -200,20 +200,20 @@ function draw() {
     return;
   }
 
-  // Log the average FPS every 2 seconds.
-  if (lastLogTime) {
+  // Update the FPS counter.
+  if (lastFpsUpdateTime) {
     const now = performance.now();
-    const timeSinceLastLog = now - lastLogTime;
-    if (timeSinceLastLog >= kFpsLogInterval) {
-      const fps = numFramesSinceLastLog / (timeSinceLastLog / 1000.0);
-      console.log(`Average FPS = ${fps}`);
-      lastLogTime = performance.now();
-      numFramesSinceLastLog = 0;
+    const timeSinceLastLog = now - lastFpsUpdateTime;
+    if (timeSinceLastLog >= kFpsUpdateInterval) {
+      const fps = numFramesSinceFpsUpdate / (timeSinceLastLog / 1000.0);
+      document.getElementById("fps").innerHTML = fps.toFixed(1) + ' FPS';
+      lastFpsUpdateTime = performance.now();
+      numFramesSinceFpsUpdate = 0;
     }
   } else {
-    lastLogTime = performance.now();
+    lastFpsUpdateTime = performance.now();
   }
-  numFramesSinceLastLog++;
+  numFramesSinceFpsUpdate++;
 
   const commandEncoder = device.createCommandEncoder();
 
