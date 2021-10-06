@@ -90,6 +90,7 @@ fn cs_main(
 struct VertexOut {
   [[builtin(position)]] position : vec4<f32>;
   [[location(0), interpolate(flat)]] center : vec4<f32>;
+  [[location(1), interpolate(flat)]] color : vec3<f32>;
 };
 
 [[stage(vertex)]]
@@ -111,6 +112,11 @@ fn vs_main(
   var out : VertexOut;
   out.position = vec4<f32>(position.xy + vertexOffsets[vertex], position.zw);
   out.center = position;
+  if (idx % 2u == 0u) {
+    out.color = vec3<f32>(0.4, 0.4, 1.0);
+  } else {
+    out.color = vec3<f32>(1.0, 0.4, 0.4);
+  }
   return out;
 }
 
@@ -118,6 +124,7 @@ fn vs_main(
 fn fs_main(
   [[builtin(position)]] position : vec4<f32>,
   [[location(0), interpolate(flat)]] center : vec4<f32>,
+  [[location(1), interpolate(flat)]] color : vec3<f32>,
   ) -> [[location(0)]] vec4<f32> {
   // Calculate the center position in framebuffer coordinates.
   var c = vec2<f32>(center.x, -center.y) + vec2<f32>(1.0, 1.0);
@@ -130,7 +137,7 @@ fn fs_main(
     discard;
   }
 
-  return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+  return vec4<f32>(color, 1.0);
 }
 `;
 }
