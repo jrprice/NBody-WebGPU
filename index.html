@@ -8,6 +8,19 @@
 
 <body>
   <h1>NBody WebGPU</h1>
+  <label for="wgsize">Workgroup size:</label>
+  <select name="wgsize" id="wgsize">
+    <option value="1024">1024</option>
+    <option value="512">512</option>
+    <option value="256">256</option>
+    <option value="128">128</option>
+    <option value="64" selected="selected">64</option>
+    <option value="32">32</option>
+    <option value="16">16</option>
+    <option value="4">4</option>
+    <option value="2">2</option>
+    <option value="1">1</option>
+  </select>
   <button onclick="run()">Run</button>
   <br /><br />
   <canvas id="canvas" width="640" height="480" style="border: solid 1px#000;"></canvas>

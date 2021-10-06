@@ -1,8 +1,42 @@
+// Simulation parameters.
 const kNumBodies = 8192;
-const kWorkgroupSize = 64;
 
-// WGSL shader source.
-const wgsl = `
+// Shader parameters.
+let workgroupSize;
+
+// WebGPU objects.
+let device: GPUDevice = null;
+let queue: GPUQueue = null;
+let computePipeline: GPUComputePipeline = null;
+let renderPipeline: GPURenderPipeline = null;
+let canvas: HTMLCanvasElement = null;
+let canvasContext: GPUCanvasContext = null;
+let positionsIn: GPUBuffer = null;
+let positionsOut: GPUBuffer = null;
+let velocities: GPUBuffer = null;
+let bindGroup: GPUBindGroup = null;
+
+const init = async () => {
+  // Initialize the WebGPU device.
+  const adapter = await navigator.gpu.requestAdapter();
+  device = await adapter.requestDevice();
+  queue = device.queue;
+
+  // Set up the canvas context.
+  canvas = <HTMLCanvasElement>document.getElementById('canvas');
+  canvasContext = canvas.getContext('webgpu');
+  canvasContext.configure({
+    device: device,
+    format: 'bgra8unorm',
+    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+  });
+
+  draw();
+}
+
+// Generate WGSL shader source.
+function getShaders() {
+  return `
 // Simulation parameters.
 let kDelta = 0.000025;
 let kSoftening = 0.2;
@@ -31,7 +65,7 @@ fn computeForce(ipos : vec4<f32>,
   return coeff * d;
 }
 
-[[stage(compute), workgroup_size(${kWorkgroupSize})]]
+[[stage(compute), workgroup_size(${workgroupSize})]]
 fn cs_main(
   [[builtin(global_invocation_id)]] gid : vec3<u32>,
   ) {
@@ -73,37 +107,13 @@ fn vs_main(
 fn fs_main() -> [[location(0)]] vec4<f32> {
   return vec4<f32>(1.0, 0.0, 0.0, 1.0);
 }
-`
+`;
+}
 
-let device: GPUDevice = null;
-let queue: GPUQueue = null;
-let computePipeline: GPUComputePipeline;
-let renderPipeline: GPURenderPipeline;
-let canvas: HTMLCanvasElement = null;
-let canvasContext: GPUCanvasContext = null;
-let positionsIn: GPUBuffer = null;
-let positionsOut: GPUBuffer = null;
-let velocities: GPUBuffer = null;
-let bindGroup: GPUBindGroup = null;
-
-const init = async () => {
+function initPipelines() {
   // Reset pipelines.
   renderPipeline = null;
   computePipeline = null;
-
-  // Initialize the WebGPU device.
-  const adapter = await navigator.gpu.requestAdapter();
-  device = await adapter.requestDevice();
-  queue = device.queue;
-
-  // Set up the canvas context.
-  canvas = <HTMLCanvasElement>document.getElementById('canvas');
-  canvasContext = canvas.getContext('webgpu');
-  canvasContext.configure({
-    device: device,
-    format: 'bgra8unorm',
-    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-  });
 
   // Create a vertex buffer for positions.
   positionsIn = device.createBuffer({
@@ -126,7 +136,7 @@ const init = async () => {
   positionsIn.unmap();
 
   // Create the shader module.
-  const module = device.createShaderModule({ code: wgsl });
+  const module = device.createShaderModule({ code: getShaders() });
 
   // Create the render pipeline.
   const positionsAttribute: GPUVertexAttribute = {
@@ -166,7 +176,7 @@ const init = async () => {
   });
 }
 
-const initBodies = (positions: Float32Array) => {
+function initBodies(positions: Float32Array) {
   // Generate initial positions on the surface of a sphere.
   const kRadius = 0.6;
   for (let i = 0; i < kNumBodies; i++) {
@@ -183,7 +193,7 @@ const initBodies = (positions: Float32Array) => {
 const kFpsLogInterval = 2000;
 let numFramesSinceLastLog = 0;
 let lastLogTime = null;
-const draw = () => {
+function draw() {
   if (!computePipeline) {
     // Not ready yet.
     requestAnimationFrame(draw);
@@ -236,7 +246,7 @@ const draw = () => {
   const computePassEncoder = commandEncoder.beginComputePass();
   computePassEncoder.setPipeline(computePipeline);
   computePassEncoder.setBindGroup(0, bindGroup);
-  computePassEncoder.dispatch(kNumBodies / kWorkgroupSize);
+  computePassEncoder.dispatch(kNumBodies / workgroupSize);
   computePassEncoder.endPass();
 
   // Set up the render pass.
@@ -265,9 +275,18 @@ const draw = () => {
   requestAnimationFrame(draw);
 }
 
-function run() {
-  init();
+const run = async () => {
+  // Make sure WebGPU device has been created.
+  if (device == null) {
+    await init();
+  }
+
+  // Get workgroup size.
+  let wgsize = <HTMLSelectElement>document.getElementById("wgsize");
+  workgroupSize = Number(wgsize.selectedOptions[0].value);
+
+  // Recreate pipelines.
+  initPipelines();
 }
 
-init();
-draw();
+run();
