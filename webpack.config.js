@@ -6,4 +6,12 @@ module.exports = {
     filename: 'nbody.js',
     path: path.resolve(__dirname, 'dist'),
   },
+  module: {
+    rules: [
+      {
+        test: /\.wgsl$/i,
+        use: 'raw-loader',
+      },
+    ],
+  },
 };
