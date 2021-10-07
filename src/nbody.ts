@@ -128,12 +128,16 @@ fn fs_main(
   [[location(0)]] positionInQuad : vec2<f32>,
   [[location(1), interpolate(flat)]] color : vec3<f32>,
   ) -> [[location(0)]] vec4<f32> {
+  // Calculate the normalized distance from this fragment to the quad center.
+  let distFromCenter = length(positionInQuad);
+
   // Discard fragments that are outside the circle.
-  if (length(positionInQuad) > 1.0) {
+  if (distFromCenter > 1.0) {
     discard;
   }
 
-  return vec4<f32>(color, 1.0);
+  let intensity = 1.0 - distFromCenter;
+  return vec4<f32>(intensity*color, 1.0);
 }
 `;
 }
