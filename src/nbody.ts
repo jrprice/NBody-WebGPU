@@ -347,3 +347,7 @@ function stop() {
 }
 
 run();
+
+// Set up button onclick handlers.
+document.querySelector('#run').addEventListener('click', run);
+document.querySelector('#stop').addEventListener('click', stop);
