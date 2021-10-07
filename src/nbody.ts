@@ -89,7 +89,7 @@ fn cs_main(
 
 struct VertexOut {
   [[builtin(position)]] position : vec4<f32>;
-  [[location(0), interpolate(flat)]] center : vec4<f32>;
+  [[location(0)]] positionInQuad : vec2<f32>;
   [[location(1), interpolate(flat)]] color : vec3<f32>;
 };
 
@@ -100,18 +100,20 @@ fn vs_main(
   [[location(0)]] position : vec4<f32>,
   ) -> VertexOut {
 
+  let kPointRadius = 0.005;
   var vertexOffsets = array<vec2<f32>, 6>(
-    vec2<f32>(0.01, -0.01),
-    vec2<f32>(-0.01, -0.01),
-    vec2<f32>(-0.01, 0.01),
-    vec2<f32>(-0.01, 0.01),
-    vec2<f32>(0.01, 0.01),
-    vec2<f32>(0.01, -0.01),
+    vec2<f32>(1.0, -1.0),
+    vec2<f32>(-1.0, -1.0),
+    vec2<f32>(-1.0, 1.0),
+    vec2<f32>(-1.0, 1.0),
+    vec2<f32>(1.0, 1.0),
+    vec2<f32>(1.0, -1.0),
   );
+  let offset = vertexOffsets[vertex];
 
   var out : VertexOut;
-  out.position = vec4<f32>(position.xy + vertexOffsets[vertex], position.zw);
-  out.center = position;
+  out.position = vec4<f32>(position.xy + offset * kPointRadius, position.zw);
+  out.positionInQuad = offset;
   if (idx % 2u == 0u) {
     out.color = vec3<f32>(0.4, 0.4, 1.0);
   } else {
@@ -123,17 +125,11 @@ fn vs_main(
 [[stage(fragment)]]
 fn fs_main(
   [[builtin(position)]] position : vec4<f32>,
-  [[location(0), interpolate(flat)]] center : vec4<f32>,
+  [[location(0)]] positionInQuad : vec2<f32>,
   [[location(1), interpolate(flat)]] color : vec3<f32>,
   ) -> [[location(0)]] vec4<f32> {
-  // Calculate the center position in framebuffer coordinates.
-  var c = vec2<f32>(center.x, -center.y) + vec2<f32>(1.0, 1.0);
-  c = (c / 2.0) * vec2<f32>(${canvas.width}.0, ${canvas.height}.0);
-
-  // Calculate the distance of this fragment from the center and discard those
-  // outside a certain radius.
-  let dist = distance(c, position.xy);
-  if (dist > 0.75) {
+  // Discard fragments that are outside the circle.
+  if (length(positionInQuad) > 1.0) {
     discard;
   }
 
