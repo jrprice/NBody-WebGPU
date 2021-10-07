@@ -1,4 +1,4 @@
-import { mat4 } from 'gl-matrix'
+import { mat4, vec3 } from 'gl-matrix'
 
 // Simulation parameters.
 let numBodies;
@@ -16,7 +16,9 @@ let canvasContext: GPUCanvasContext = null;
 let positionsIn: GPUBuffer = null;
 let positionsOut: GPUBuffer = null;
 let velocities: GPUBuffer = null;
-let bindGroup: GPUBindGroup = null;
+let renderParams: GPUBuffer = null;
+let computeBindGroup: GPUBindGroup = null;
+let renderBindGroup: GPUBindGroup = null;
 
 const init = async () => {
   // Initialize the WebGPU device.
@@ -89,6 +91,14 @@ fn cs_main(
   positionsOut.data[idx] = pos + velocity * kDelta;
 }
 
+[[block]]
+struct RenderParams {
+  viewProjectionMatrix : mat4x4<f32>;
+};
+
+[[group(0), binding(0)]]
+var<uniform> renderParams : RenderParams;
+
 struct VertexOut {
   [[builtin(position)]] position : vec4<f32>;
   [[location(0)]] positionInQuad : vec2<f32>;
@@ -114,7 +124,8 @@ fn vs_main(
   let offset = vertexOffsets[vertex];
 
   var out : VertexOut;
-  out.position = vec4<f32>(position.xy + offset * kPointRadius, position.zw);
+  out.position = renderParams.viewProjectionMatrix *
+    vec4<f32>(position.xy + offset * kPointRadius, position.zw);
   out.positionInQuad = offset;
   if (idx % 2u == 0u) {
     out.color = vec3<f32>(0.4, 0.4, 1.0);
@@ -149,7 +160,16 @@ function initPipelines() {
   renderPipeline = null;
   computePipeline = null;
 
-  // Create a vertex buffer for positions.
+  // Generate the view projection matrix.
+  let eyePosition = vec3.fromValues(0.0, 0.0, -1.5);
+  let projectionMatrix = mat4.create();
+  let viewProjectionMatrix = mat4.create();
+  mat4.perspectiveZO(projectionMatrix,
+    1.0, canvas.width / canvas.height, 0.1, 50.0);
+  mat4.translate(viewProjectionMatrix, viewProjectionMatrix, eyePosition);
+  mat4.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
+
+  // Create buffers for body positions and velocities.
   positionsIn = device.createBuffer({
     size: numBodies * 4 * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX,
@@ -168,6 +188,16 @@ function initPipelines() {
   let positionsMapped = new Float32Array(positionsIn.getMappedRange());
   initBodies(positionsMapped);
   positionsIn.unmap();
+
+  // Create a uniform buffer for the render parameters.
+  renderParams = device.createBuffer({
+    size: 4 * 4 * 4, // sizeof(mat4x4<f32>)
+    usage: GPUBufferUsage.UNIFORM,
+    mappedAtCreation: true,
+  });
+  let renderParamsMapped = new Float32Array(renderParams.getMappedRange());
+  renderParamsMapped.set(viewProjectionMatrix);
+  renderParams.unmap();
 
   // Create the shader module.
   const module = device.createShaderModule({ code: getShaders() });
@@ -266,7 +296,7 @@ function draw() {
   const commandEncoder = device.createCommandEncoder();
 
   // Create the bind group for the compute shader.
-  bindGroup = device.createBindGroup({
+  computeBindGroup = device.createBindGroup({
     layout: computePipeline.getBindGroupLayout(0),
     entries: [
       {
@@ -290,10 +320,23 @@ function draw() {
     ],
   });
 
+  // Create the bind group for the compute shader.
+  renderBindGroup = device.createBindGroup({
+    layout: renderPipeline.getBindGroupLayout(0),
+    entries: [
+      {
+        binding: 0,
+        resource: {
+          buffer: renderParams,
+        },
+      },
+    ],
+  });
+
   // Set up the compute shader dispatch.
   const computePassEncoder = commandEncoder.beginComputePass();
   computePassEncoder.setPipeline(computePipeline);
-  computePassEncoder.setBindGroup(0, bindGroup);
+  computePassEncoder.setBindGroup(0, computeBindGroup);
   computePassEncoder.dispatch(numBodies / workgroupSize);
   computePassEncoder.endPass();
 
@@ -311,6 +354,7 @@ function draw() {
   renderPassEncoder.setPipeline(renderPipeline);
   renderPassEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
   renderPassEncoder.setScissorRect(0, 0, canvas.width, canvas.height);
+  renderPassEncoder.setBindGroup(0, renderBindGroup);
   renderPassEncoder.setVertexBuffer(0, positionsOut);
   renderPassEncoder.draw(6, numBodies);
   renderPassEncoder.endPass();
