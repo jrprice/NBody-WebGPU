@@ -13,3 +13,4 @@ Initial setup:
 Recompiling after changes:
 
     tsc
+    npx webpack

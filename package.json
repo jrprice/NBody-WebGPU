@@ -1,5 +1,25 @@
 {
+  "name": "nbody-webgpu",
+  "version": "0.1.0",
+  "description": "An NBody simulation demo written in WebGPU.",
+  "dependencies": {
+    "gl-matrix": "^3.4.3"
+  },
   "devDependencies": {
-    "@webgpu/types": "^0.1.6"
-  }
+    "@webgpu/types": "^0.1.6",
+    "typescript": "^4.4.3",
+    "webpack": "^5.58.0",
+    "webpack-cli": "^4.9.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jrprice/NBody-WebGPU.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/jrprice/NBody-WebGPU/issues"
+  },
+  "homepage": "https://github.com/jrprice/NBody-WebGPU#readme"
 }
