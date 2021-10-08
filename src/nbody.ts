@@ -325,6 +325,11 @@ window.addEventListener('resize', updateRenderParams);
 
 // Handle key presses for user controls.
 document.addEventListener('keydown', (e: KeyboardEvent) => {
+  if (e.key == ' ') {
+    pause();
+  }
+});
+document.addEventListener('keydown', (e: KeyboardEvent) => {
   currentKey = e;
 });
 document.addEventListener('keyup', (e: KeyboardEvent) => {
