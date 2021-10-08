@@ -49,6 +49,12 @@ function getShaders() {
   return preamble + shaders;
 }
 
+// Get the selected number from a drop-down menu.
+function getSelectedNumber(id: string): Number {
+  let list = <HTMLSelectElement>document.getElementById(id);
+  return Number(list.selectedOptions[0].value);
+}
+
 const updateRenderParams = async () => {
   // Fit the canvas to the window.
   canvas.width = window.innerWidth;
@@ -79,25 +85,8 @@ function initPipelines() {
   renderPipeline = null;
   computePipeline = null;
 
-  // Create buffers for body positions and velocities.
-  positionsIn = device.createBuffer({
-    size: numBodies * 4 * 4,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX,
-    mappedAtCreation: true
-  });
-  positionsOut = device.createBuffer({
-    size: numBodies * 4 * 4,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX,
-    mappedAtCreation: false
-  });
-  velocities = device.createBuffer({
-    size: numBodies * 4 * 4,
-    usage: GPUBufferUsage.STORAGE,
-    mappedAtCreation: false
-  });
-  let positionsMapped = new Float32Array(positionsIn.getMappedRange());
-  initBodies(positionsMapped);
-  positionsIn.unmap();
+  // Update pipeline options.
+  workgroupSize = getSelectedNumber("wgsize");
 
   // Create a uniform buffer for the render parameters.
   renderParams = device.createBuffer({
@@ -162,9 +151,27 @@ function initPipelines() {
   });
 }
 
-function initBodies(positions: Float32Array) {
+function initBodies() {
+  // Create buffers for body positions and velocities.
+  positionsIn = device.createBuffer({
+    size: numBodies * 4 * 4,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX,
+    mappedAtCreation: true
+  });
+  positionsOut = device.createBuffer({
+    size: numBodies * 4 * 4,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX,
+    mappedAtCreation: false
+  });
+  velocities = device.createBuffer({
+    size: numBodies * 4 * 4,
+    usage: GPUBufferUsage.STORAGE,
+    mappedAtCreation: false
+  });
+
   // Generate initial positions on the surface of a sphere.
   const kRadius = 0.6;
+  let positions = new Float32Array(positionsIn.getMappedRange());
   for (let i = 0; i < numBodies; i++) {
     let longitude = 2.0 * Math.PI * Math.random();
     let latitude = Math.acos((2.0 * Math.random() - 1.0));
@@ -173,6 +180,7 @@ function initBodies(positions: Float32Array) {
     positions[i * 4 + 2] = kRadius * Math.cos(latitude);
     positions[i * 4 + 3] = 1.0;
   }
+  positionsIn.unmap();
 }
 
 // Render loop.
@@ -294,16 +302,12 @@ const reset = async () => {
     await init();
   }
 
-  // Get configurable options.
-  const getSelectedNumber = (id: string) => {
-    let list = <HTMLSelectElement>document.getElementById(id);
-    return Number(list.selectedOptions[0].value);
-  }
-  numBodies = getSelectedNumber("numbodies");
-  workgroupSize = getSelectedNumber("wgsize");
-
   // Reset the camera position.
   eyePosition = vec3.fromValues(0.0, 0.0, -1.5);
+
+  // Reset the simulation.
+  numBodies = getSelectedNumber("numbodies");
+  initBodies();
 
   // Recreate pipelines.
   initPipelines();
@@ -324,6 +328,9 @@ document.querySelector('#pause').addEventListener('click', pause);
 
 // Automatically reset when the number of bodies is changed.
 document.querySelector('#numbodies').addEventListener('change', reset);
+
+// Automatically rebuild the pipelines when the workgroup size is changed.
+document.querySelector('#wgsize').addEventListener('change', initPipelines);
 
 // Add an event handler to update render parameters when the window is resized.
 window.addEventListener('resize', updateRenderParams);
