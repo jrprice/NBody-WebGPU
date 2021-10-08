@@ -322,6 +322,9 @@ reset();
 document.querySelector('#reset').addEventListener('click', reset);
 document.querySelector('#pause').addEventListener('click', pause);
 
+// Automatically reset when the number of bodies is changed.
+document.querySelector('#numbodies').addEventListener('change', reset);
+
 // Add an event handler to update render parameters when the window is resized.
 window.addEventListener('resize', updateRenderParams);
 
