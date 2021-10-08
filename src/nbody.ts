@@ -7,6 +7,9 @@ let numBodies;
 // Shader parameters.
 let workgroupSize;
 
+// Controls.
+let paused: Boolean = false;
+
 // WebGPU objects.
 let device: GPUDevice = null;
 let queue: GPUQueue = null;
@@ -235,12 +238,17 @@ function draw() {
     ],
   });
 
-  // Set up the compute shader dispatch.
-  const computePassEncoder = commandEncoder.beginComputePass();
-  computePassEncoder.setPipeline(computePipeline);
-  computePassEncoder.setBindGroup(0, computeBindGroup);
-  computePassEncoder.dispatch(numBodies / workgroupSize);
-  computePassEncoder.endPass();
+  if (!paused) {
+    // Set up the compute shader dispatch.
+    const computePassEncoder = commandEncoder.beginComputePass();
+    computePassEncoder.setPipeline(computePipeline);
+    computePassEncoder.setBindGroup(0, computeBindGroup);
+    computePassEncoder.dispatch(numBodies / workgroupSize);
+    computePassEncoder.endPass();
+
+    // Swap the positions buffers.
+    [positionsIn, positionsOut] = [positionsOut, positionsIn];
+  }
 
   // Set up the render pass.
   const colorTexture: GPUTexture = canvasContext.getCurrentTexture();
@@ -257,14 +265,11 @@ function draw() {
   renderPassEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
   renderPassEncoder.setScissorRect(0, 0, canvas.width, canvas.height);
   renderPassEncoder.setBindGroup(0, renderBindGroup);
-  renderPassEncoder.setVertexBuffer(0, positionsOut);
+  renderPassEncoder.setVertexBuffer(0, positionsIn);
   renderPassEncoder.draw(6, numBodies);
   renderPassEncoder.endPass();
 
   queue.submit([commandEncoder.finish()]);
-
-  // Swap the positions buffers.
-  [positionsIn, positionsOut] = [positionsOut, positionsIn];
 
   requestAnimationFrame(draw);
 }
@@ -287,16 +292,16 @@ const run = async () => {
   initPipelines();
 }
 
-function stop() {
-  computePipeline = null;
-  renderPipeline = null;
+function pause() {
+  paused = !paused;
+  document.getElementById("pause").innerText = paused ? 'Unpause' : 'Pause';
 }
 
 run();
 
 // Set up button onclick handlers.
 document.querySelector('#run').addEventListener('click', run);
-document.querySelector('#stop').addEventListener('click', stop);
+document.querySelector('#pause').addEventListener('click', pause);
 
 // Add an event handler to update render parameters when the window is resized.
 window.addEventListener('resize', updateRenderParams);
