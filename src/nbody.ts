@@ -307,6 +307,8 @@ const reset = async () => {
 
   // Recreate pipelines.
   initPipelines();
+
+  paused = false;
 }
 
 function pause() {
@@ -326,6 +328,11 @@ window.addEventListener('resize', updateRenderParams);
 // Handle key presses for user controls.
 document.addEventListener('keydown', (e: KeyboardEvent) => {
   if (e.key == ' ') {
+    // Clear the active element to stop spacebar presses re-clicking the button.
+    let activeElement = document.activeElement as HTMLElement;
+    if (activeElement) {
+      activeElement.blur();
+    }
     pause();
   }
 });
