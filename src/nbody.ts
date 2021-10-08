@@ -274,7 +274,7 @@ function draw() {
   requestAnimationFrame(draw);
 }
 
-const run = async () => {
+const reset = async () => {
   // Make sure WebGPU device has been created.
   if (device == null) {
     await init();
@@ -297,10 +297,10 @@ function pause() {
   document.getElementById("pause").innerText = paused ? 'Unpause' : 'Pause';
 }
 
-run();
+reset();
 
 // Set up button onclick handlers.
-document.querySelector('#run').addEventListener('click', run);
+document.querySelector('#reset').addEventListener('click', reset);
 document.querySelector('#pause').addEventListener('click', pause);
 
 // Add an event handler to update render parameters when the window is resized.
