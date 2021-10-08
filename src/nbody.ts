@@ -9,6 +9,10 @@ let workgroupSize;
 
 // Controls.
 let paused: Boolean = false;
+let currentKey: KeyboardEvent = null;
+
+// Render parameters.
+let eyePosition: vec3;
 
 // WebGPU objects.
 let device: GPUDevice = null;
@@ -56,7 +60,6 @@ const updateRenderParams = async () => {
   });
 
   // Generate the view projection matrix.
-  let eyePosition = vec3.fromValues(0.0, 0.0, -1.5);
   let projectionMatrix = mat4.create();
   let viewProjectionMatrix = mat4.create();
   mat4.perspectiveZO(projectionMatrix,
@@ -198,6 +201,17 @@ function draw() {
   }
   numFramesSinceFpsUpdate++;
 
+  // Update render parameters based on key presses.
+  if (currentKey) {
+    let zInc = 0.025;
+    if (currentKey.key == 'ArrowUp') {
+      eyePosition[2] += zInc;
+    } else if (currentKey.key == 'ArrowDown') {
+      eyePosition[2] -= zInc;
+    }
+    updateRenderParams();
+  }
+
   const commandEncoder = device.createCommandEncoder();
 
   // Create the bind group for the compute shader.
@@ -288,6 +302,9 @@ const reset = async () => {
   numBodies = getSelectedNumber("numbodies");
   workgroupSize = getSelectedNumber("wgsize");
 
+  // Reset the camera position.
+  eyePosition = vec3.fromValues(0.0, 0.0, -1.5);
+
   // Recreate pipelines.
   initPipelines();
 }
@@ -305,3 +322,11 @@ document.querySelector('#pause').addEventListener('click', pause);
 
 // Add an event handler to update render parameters when the window is resized.
 window.addEventListener('resize', updateRenderParams);
+
+// Handle key presses for user controls.
+document.addEventListener('keydown', (e: KeyboardEvent) => {
+  currentKey = e;
+});
+document.addEventListener('keyup', (e: KeyboardEvent) => {
+  currentKey = null;
+});
