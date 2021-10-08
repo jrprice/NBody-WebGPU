@@ -30,11 +30,6 @@ const init = async () => {
   // Set up the canvas context.
   canvas = <HTMLCanvasElement>document.getElementById('canvas');
   canvasContext = canvas.getContext('webgpu');
-  canvasContext.configure({
-    device: device,
-    format: 'bgra8unorm',
-    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-  });
 
   draw();
 }
@@ -47,10 +42,15 @@ function getShaders() {
   return preamble + shaders;
 }
 
-function initPipelines() {
-  // Reset pipelines.
-  renderPipeline = null;
-  computePipeline = null;
+const updateRenderParams = async () => {
+  // Fit the canvas to the window.
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvasContext.configure({
+    device: device,
+    format: 'bgra8unorm',
+    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+  });
 
   // Generate the view projection matrix.
   let eyePosition = vec3.fromValues(0.0, 0.0, -1.5);
@@ -60,6 +60,18 @@ function initPipelines() {
     1.0, canvas.width / canvas.height, 0.1, 50.0);
   mat4.translate(viewProjectionMatrix, viewProjectionMatrix, eyePosition);
   mat4.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
+
+  // Write the render parameters to the uniform buffer.
+  let renderParamsHost = new ArrayBuffer(4 * 4 * 4);
+  let viewProjectionMatrixHost = new Float32Array(renderParamsHost);
+  viewProjectionMatrixHost.set(viewProjectionMatrix);
+  queue.writeBuffer(renderParams, 0, renderParamsHost);
+}
+
+function initPipelines() {
+  // Reset pipelines.
+  renderPipeline = null;
+  computePipeline = null;
 
   // Create buffers for body positions and velocities.
   positionsIn = device.createBuffer({
@@ -84,12 +96,10 @@ function initPipelines() {
   // Create a uniform buffer for the render parameters.
   renderParams = device.createBuffer({
     size: 4 * 4 * 4, // sizeof(mat4x4<f32>)
-    usage: GPUBufferUsage.UNIFORM,
-    mappedAtCreation: true,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    mappedAtCreation: false,
   });
-  let renderParamsMapped = new Float32Array(renderParams.getMappedRange());
-  renderParamsMapped.set(viewProjectionMatrix);
-  renderParams.unmap();
+  updateRenderParams();
 
   // Create the shader module.
   const module = device.createShaderModule({ code: getShaders() });
@@ -287,3 +297,6 @@ run();
 // Set up button onclick handlers.
 document.querySelector('#run').addEventListener('click', run);
 document.querySelector('#stop').addEventListener('click', stop);
+
+// Add an event handler to update render parameters when the window is resized.
+window.addEventListener('resize', updateRenderParams);

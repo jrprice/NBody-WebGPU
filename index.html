@@ -8,7 +8,7 @@
   <title>NBody-WebGPU</title>
 </head>
 
-<body>
+<body style="overflow: hidden; margin: 0;">
   <div name="controls" style="font-weight: bold; color: white; position:absolute; margin: 5px;">
     <label id="fps" style="font-weight: bold; color: lime"></label>
     <br />
@@ -41,7 +41,7 @@
     <button id="stop">Stop</button>
   </div>
   <div>
-    <canvas id="canvas" width="1280" height="720" style="border: solid 1px#000;"></canvas>
+    <canvas id="canvas"></canvas>
     <script type="module" src="dist/nbody.js"></script>
   </div>
 </body>
