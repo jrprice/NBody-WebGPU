@@ -1,7 +1,10 @@
 NBody-WebGPU
 ============
 
-A simple N-Body simulation implemented using WebGPU.
+A simple N-body simulation implemented using WebGPU.
+
+https://jrprice.github.io/NBody-WebGPU/
+
 
 Building
 --------
@@ -12,5 +15,5 @@ Initial setup:
 
 Recompiling after changes:
 
-    tsc
+    npx tsc
     npx webpack
