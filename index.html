@@ -13,7 +13,7 @@
     <label id="fps" style="font-weight: bold; color: lime"></label>
     <br />
     <label for="numbodies">Number of bodies:</label>
-    <select name="numbodies" id="numbodies" style="font-size: 80%;">
+    <select name="numbodies" id="numbodies" style="font-size: 80%;" onkeydown="return false">
       <option value="65536">65536</option>
       <option value="32768">32768</option>
       <option value="16384" selected="selected">16384</option>
@@ -26,7 +26,7 @@
     </select>
     <br />
     <label for="wgsize">Workgroup size:</label>
-    <select name="wgsize" id="wgsize" style="font-size: 80%;">
+    <select name="wgsize" id="wgsize" style="font-size: 80%;" onkeydown="return false">
       <option value="256">256</option>
       <option value="128">128</option>
       <option value="64" selected="selected">64</option>
@@ -37,8 +37,8 @@
       <option value="1">1</option>
     </select>
     <br />
-    <button id="reset" style="font-size: 80%;">Reset</button>
-    <button id="pause" style="font-size: 80%;">Pause</button>
+    <button id="reset" style="font-size: 80%;" onkeydown="return false">Reset</button>
+    <button id="pause" style="font-size: 80%;" onkeydown="return false">Pause</button>
   </div>
   <div name="controls"
     style="font-weight: bold; color: white; margin: 5px; margin-right: 15px; position: absolute; right: 0; line-height: 120%;">
