@@ -8,7 +8,7 @@ struct Float4Buffer {
 };
 
 [[group(0), binding(0)]]
-var<storage, read_write> positionsIn : Float4Buffer;
+var<storage, read> positionsIn : Float4Buffer;
 
 [[group(0), binding(1)]]
 var<storage, read_write> positionsOut : Float4Buffer;
