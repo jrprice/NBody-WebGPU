@@ -12,6 +12,12 @@
   <div name="options" style="font-weight: bold; color: white; position: absolute; margin-left: 5px; line-height: 150%;">
     <label id="fps" style="font-weight: bold; color: lime"></label>
     <br />
+    <label for="powerpref">Power preference:</label>
+    <select name="powerpref" id="powerpref" style="font-size: 80%;" onkeydown="return false">
+      <option value="high-performance" selected="selected">high-performance</option>
+      <option value="low-power">low-power</option>
+    </select>
+    <br />
     <label for="numbodies">Number of bodies:</label>
     <select name="numbodies" id="numbodies" style="font-size: 80%;" onkeydown="return false">
       <option value="65536">65536</option>
