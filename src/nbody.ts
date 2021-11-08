@@ -334,6 +334,7 @@ document.querySelector('#numbodies').addEventListener('change', reset);
 // Automatically reset when the power preference is changed.
 document.querySelector('#powerpref').addEventListener('change', () => {
   device = null;
+  computePipeline = null;
   reset();
 });
 
