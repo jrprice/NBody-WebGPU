@@ -30,15 +30,16 @@ let renderBindGroup: GPUBindGroup = null;
 
 const init = async () => {
   // Initialize the WebGPU device.
-  const adapter = await navigator.gpu.requestAdapter();
-  device = await adapter.requestDevice();
+  const powerPref = <HTMLSelectElement>document.getElementById('powerpref');
+  const adapter = await navigator.gpu.requestAdapter({
+    powerPreference: <GPUPowerPreference>powerPref.selectedOptions[0].value,
+  });
+  device = await adapter.requestDevice()
   queue = device.queue;
 
   // Set up the canvas context.
   canvas = <HTMLCanvasElement>document.getElementById('canvas');
   canvasContext = canvas.getContext('webgpu');
-
-  draw();
 }
 
 // Generate WGSL shader source.
@@ -321,6 +322,7 @@ function pause() {
 }
 
 reset();
+draw();
 
 // Set up button onclick handlers.
 document.querySelector('#reset').addEventListener('click', reset);
@@ -328,6 +330,12 @@ document.querySelector('#pause').addEventListener('click', pause);
 
 // Automatically reset when the number of bodies is changed.
 document.querySelector('#numbodies').addEventListener('change', reset);
+
+// Automatically reset when the power preference is changed.
+document.querySelector('#powerpref').addEventListener('change', () => {
+  device = null;
+  reset();
+});
 
 // Automatically rebuild the pipelines when the workgroup size is changed.
 document.querySelector('#wgsize').addEventListener('change', initPipelines);
