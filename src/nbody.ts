@@ -267,7 +267,7 @@ function draw() {
     computePassEncoder.setPipeline(computePipeline);
     computePassEncoder.setBindGroup(0, computeBindGroup);
     computePassEncoder.dispatch(numBodies / workgroupSize);
-    computePassEncoder.endPass();
+    computePassEncoder.end();
 
     // Swap the positions buffers.
     [positionsIn, positionsOut] = [positionsOut, positionsIn];
@@ -278,7 +278,8 @@ function draw() {
   const colorTextureView: GPUTextureView = colorTexture.createView();
   const colorAttachment: GPURenderPassColorAttachment = {
     view: colorTextureView,
-    loadValue: { r: 0, g: 0, b: 0.1, a: 1 },
+    loadOp: "clear",
+    clearValue: { r: 0, g: 0, b: 0.1, a: 1 },
     storeOp: 'store'
   };
   const renderPassEncoder = commandEncoder.beginRenderPass({
@@ -290,7 +291,7 @@ function draw() {
   renderPassEncoder.setBindGroup(0, renderBindGroup);
   renderPassEncoder.setVertexBuffer(0, positionsIn);
   renderPassEncoder.draw(6, numBodies);
-  renderPassEncoder.endPass();
+  renderPassEncoder.end();
 
   queue.submit([commandEncoder.finish()]);
 
