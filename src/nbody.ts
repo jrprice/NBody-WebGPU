@@ -45,8 +45,8 @@ const init = async () => {
 // Generate WGSL shader source.
 function getShaders() {
   let preamble = ''
-  preamble += `let kWorkgroupSize = ${workgroupSize};\n`;
-  preamble += `let kNumBodies = ${numBodies};\n`;
+  preamble += `const kWorkgroupSize = ${workgroupSize};\n`;
+  preamble += `const kNumBodies = ${numBodies};\n`;
   return preamble + shaders;
 }
 

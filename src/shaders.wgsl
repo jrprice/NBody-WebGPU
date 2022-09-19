@@ -1,6 +1,6 @@
 // Simulation parameters.
-let kDelta = 0.000025;
-let kSoftening = 0.2;
+const kDelta = 0.000025;
+const kSoftening = 0.2;
 
 @group(0) @binding(0)
 var<storage, read> positionsIn : array<vec4<f32>>;
@@ -21,7 +21,7 @@ fn computeForce(ipos : vec4<f32>,
   return coeff * d;
 }
 
-@stage(compute) @workgroup_size(kWorkgroupSize)
+@compute @workgroup_size(kWorkgroupSize)
 fn cs_main(
   @builtin(global_invocation_id) gid : vec3<u32>,
   ) {
@@ -44,19 +44,19 @@ fn cs_main(
 }
 
 struct RenderParams {
-  viewProjectionMatrix : mat4x4<f32>;
-};
+  viewProjectionMatrix : mat4x4<f32>
+}
 
 @group(0) @binding(0)
 var<uniform> renderParams : RenderParams;
 
 struct VertexOut {
-  @builtin(position) position : vec4<f32>;
-  @location(0) positionInQuad : vec2<f32>;
-  @location(1) @interpolate(flat) color : vec3<f32>;
-};
+  @builtin(position) position : vec4<f32>,
+  @location(0) positionInQuad : vec2<f32>,
+  @location(1) @interpolate(flat) color : vec3<f32>,
+}
 
-@stage(vertex)
+@vertex
 fn vs_main(
   @builtin(instance_index) idx : u32,
   @builtin(vertex_index) vertex : u32,
@@ -86,7 +86,7 @@ fn vs_main(
   return out;
 }
 
-@stage(fragment)
+@fragment
 fn fs_main(
   @builtin(position) position : vec4<f32>,
   @location(0) positionInQuad : vec2<f32>,
