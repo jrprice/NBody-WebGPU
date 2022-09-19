@@ -268,7 +268,7 @@ function draw() {
     const computePassEncoder = commandEncoder.beginComputePass();
     computePassEncoder.setPipeline(computePipeline);
     computePassEncoder.setBindGroup(0, computeBindGroup);
-    computePassEncoder.dispatch(numBodies / workgroupSize);
+    computePassEncoder.dispatchWorkgroups(numBodies / workgroupSize);
     computePassEncoder.end();
 
     // Swap the positions buffers.
