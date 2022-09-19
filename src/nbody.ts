@@ -141,6 +141,7 @@ function initPipelines() {
       cullMode: 'none',
       topology: 'triangle-list',
     },
+    layout: "auto",
   });
 
   // Create the compute pipeline.
@@ -149,6 +150,7 @@ function initPipelines() {
       module: module,
       entryPoint: 'cs_main',
     },
+    layout: "auto"
   });
 }
 
