@@ -14,7 +14,7 @@ var<storage, read_write> velocities : array<vec4<f32>>;
 fn computeForce(ipos : vec4<f32>,
                 jpos : vec4<f32>,
                 ) -> vec4<f32> {
-  let d = vec4((jpos - ipos).xyz, 0.0);
+  let d = vec4((jpos - ipos).xyz, 0);
   let distSq = d.x*d.x + d.y*d.y + d.z*d.z + kSoftening*kSoftening;
   let dist   = inverseSqrt(distSq);
   let coeff  = jpos.w * (dist*dist*dist);
@@ -30,7 +30,7 @@ fn cs_main(
 
   // Compute force.
   var force = vec4(0.0);
-  for (var i = 0; i < kNumBodies; i = i + 1) {
+  for (var i = 0; i < kNumBodies; i++) {
     force = force + computeForce(pos, positionsIn[i]);
   }
 
@@ -65,12 +65,12 @@ fn vs_main(
 
   let kPointRadius = 0.005;
   let vertexOffsets = array<vec2<f32>, 6>(
-    vec2(1.0, -1.0),
+    vec2( 1.0, -1.0),
     vec2(-1.0, -1.0),
-    vec2(-1.0, 1.0),
-    vec2(-1.0, 1.0),
-    vec2(1.0, 1.0),
-    vec2(1.0, -1.0),
+    vec2(-1.0,  1.0),
+    vec2(-1.0,  1.0),
+    vec2( 1.0,  1.0),
+    vec2( 1.0, -1.0),
   );
   let offset = vertexOffsets[vertex];
 
@@ -78,7 +78,7 @@ fn vs_main(
   out.position = renderParams.viewProjectionMatrix *
     vec4(position.xy + offset * kPointRadius, position.zw);
   out.positionInQuad = offset;
-  if (idx % 2u == 0u) {
+  if (idx % 2 == 0) {
     out.color = vec3(0.4, 0.4, 1.0);
   } else {
     out.color = vec3(1.0, 0.4, 0.4);
@@ -96,10 +96,10 @@ fn fs_main(
   let distFromCenter = length(positionInQuad);
 
   // Discard fragments that are outside the circle.
-  if (distFromCenter > 1.0) {
+  if (distFromCenter > 1) {
     discard;
   }
 
-  let intensity = 1.0 - distFromCenter;
-  return vec4(intensity*color, 1.0);
+  let intensity = 1 - distFromCenter;
+  return vec4(intensity*color, 1);
 }
