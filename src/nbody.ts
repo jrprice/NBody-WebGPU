@@ -121,7 +121,7 @@ function initPipelines() {
       module: module,
       entryPoint: 'fs_main',
       targets: [{
-        format: 'bgra8unorm',
+        format: navigator.gpu.getPreferredCanvasFormat(),
         blend: {
           color: {
             operation: "add",
