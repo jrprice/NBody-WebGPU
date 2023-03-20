@@ -62,7 +62,7 @@ const updateRenderParams = async () => {
   canvas.height = window.innerHeight;
   canvasContext.configure({
     device: device,
-    format: 'bgra8unorm',
+    format: navigator.gpu.getPreferredCanvasFormat(),
     usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
   });
 
